@@ -28,10 +28,10 @@ def newmark(M, G, g, f_ext, dt, T, IC, C_t=None, K_t=None, tol_res=1e-6, tol_g=1
     n_steps = int(T/dt)
 
     # Initialize arrays to store results
-    q = np.zeros((n_dof, n_steps))
+    q = np.zeros((n_dof, n_steps+1))
     dq = np.zeros_like(q)
     ddq = np.zeros_like(q)
-    lambdas = np.zeros((n_const, n_steps))
+    lambdas = np.zeros((n_const, n_steps+1))
 
     # Set initial conditions, solve for init accel
     q_0 = IC[:, 0]
@@ -41,7 +41,7 @@ def newmark(M, G, g, f_ext, dt, T, IC, C_t=None, K_t=None, tol_res=1e-6, tol_g=1
     ddq[:, 0] = np.linalg.solve(M, f_ext(0) - G(q_0).T @ lambdas[:, 0])
 
     # Time integration loop
-    for n in range(n_steps - 1):
+    for n in range(n_steps):
         # Compute the predictors ( explicit terms of the Newmark formulas)
         q_pred = q[:, n] + dt * dq[:, n] + \
             dt**2 * (1/2 - beta) * ddq[:, n]
