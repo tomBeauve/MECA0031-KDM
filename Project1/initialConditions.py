@@ -1,79 +1,58 @@
 import numpy as np
+from mechanismInit import Suspension
 
-n_dof = 17
-n_const = 16
-m1 = 2.5
-m2 = 2.0
-m3 = 15.0
-m4 = 1.0
-L1 = 0.5
-L2 = 0.6
-L3 = 0.72
-mu1 = m1/L1
-mu2 = m2/L2
-mu3 = m3/L3
-D = 0.15
-x_r = 0.1306
-y_r = 0.1934
-phi_0_deg = 120  # degrees
-phi_0 = np.radians(phi_0_deg)  # radians
-k = 5e4
-d = 0.25
-l_0 = 0.0
+n_dof = Suspension.p["n_dof"]
 
 
-# 1. Choose an independent starting angle for the main vertical bar
-phiH_0 = np.pi / 2  # Perfectly vertical
+### Values obtained from steady state withspring ###
 
-# 2. Position of Node G (Bottom pivot link L1)
-# g[12]: xG - L1*cos(phiN) = 0
-# g[13]: yG - L1*sin(phiN) = 0
-phiN_0 = np.pi  # Pointing left
-xG_0 = L1 * np.cos(phiN_0)
-yG_0 = L1 * np.sin(phiN_0)
-
-# 3. Propagate positions along the rigid bar L3 based on phiH
-# We use G as the reference point (index 6,7)
-# Segments: G-H is L3/3 | G-E is (2L3/5 - L3/3) | E-C is (2L3/3 - 2L3/5) | C-A is L3/3
-xH_0 = xG_0 - (L3/3) * np.cos(phiH_0)
-yH_0 = yG_0 - (L3/3) * np.sin(phiH_0)
-
-xE_0 = xG_0 + (2*L3/5 - L3/3) * np.cos(phiH_0)
-yE_0 = yG_0 + (2*L3/5 - L3/3) * np.sin(phiH_0)
-
-xC_0 = xE_0 + (2*L3/3 - 2*L3/5) * np.cos(phiH_0)
-yC_0 = yE_0 + (2*L3/3 - 2*L3/5) * np.sin(phiH_0)
-
-xA_0 = xC_0 + (L3/3) * np.cos(phiH_0)
-yA_0 = yC_0 + (L3/3) * np.sin(phiH_0)
-
-# 4. Solve for Dependent Angles (phiJ, phiL, phiO)
-# phiJ: connects (0, d) to C
-phiJ_0 = np.arctan2(yC_0 - d, xC_0)
-
-# phiO: The rotor angle (Assuming the rotor is at x_r, y_r pointing to L)
-# For the very start, let's assume L is at its leftmost position on the rotor
-phiO_0 = np.pi
-xL_0 = x_r + (D/2) * np.cos(phiO_0)
-yL_0 = y_r + (D/2) * np.sin(phiO_0)
-
-# phiL: connects E to L
-phiL_0 = np.arctan2(yE_0 - yL_0, xE_0 - xL_0)
-
-# 5. Assemble the final IC vector
-q0 = np.array([
-    xA_0, yA_0,   # 0, 1
-    xC_0, yC_0,   # 2, 3
-    xE_0, yE_0,   # 4, 5
-    xG_0, yG_0,   # 6, 7
-    xH_0, yH_0,   # 8, 9
-    phiH_0,       # 10
-    phiJ_0,       # 11
-    xL_0, yL_0,   # 12, 13
-    phiL_0,       # 14
-    phiN_0,       # 15
-    phiO_0        # 16
+q_steady = np.array([
+    -0.49791649,  0.45224999,  # A
+    -0.49857297,  0.21225089,  # C
+    -0.49909815,  0.02025161,  # E
+    -0.49922944, -0.02774821,  # G
+    -0.49988592, -0.26774731,  # H
+    1.56806101,  # phiH
+    -3.06602253,            # phiJ
+    0.06390028,  0.22769501,  # L
+    -2.78856641,               # phiL
+    3.1971176,  # phiN
+    2.66667319  # phiO
 ])
 
-dq0 = np.zeros(n_dof)
-IC = np.vstack([q0, dq0]).T
+
+### Steady state with very strong spring ####
+q_steady = np.array([
+    -0.49871489,  0.46147826,  # A
+    -0.49918587,  0.22147872,  # C
+    -0.49956266,  0.02947909,  # E
+    -0.49965686, -0.01852081,  # G
+    -0.50012785, -0.25852035,  # H
+    1.56883388,              # phiH
+    -3.08451912,              # phiJ
+    0.06562973,  0.23086817,  # L
+    -2.79929911,              # phiL
+    3.17864276,              # phiN
+    2.61848386               # phiO
+])
+
+### Values obtained from steady state without spring ###
+q_steady = np.array([
+    -0.47041178,  0.32989699,  # A
+    -0.47368149,  0.08991926,  # C
+    -0.47629727, -0.10206292,  # E
+    -0.47695121, -0.15005847,  # G
+    -0.48022093, -0.39003619,  # H
+    1.55717208,             # phiH
+    -2.81569272,             # phiJ
+    0.06337998,  0.16013638,  # L
+    -2.68933332,             # phiL
+    3.44640789,             # phiN
+    3.60110934              # phiO
+])
+
+
+dq_steady = np.zeros(n_dof)
+
+# Assemble IC as (n_dof, 2) where column 0 is q and column 1 is dq
+IC = np.vstack([q_steady, dq_steady]).T
