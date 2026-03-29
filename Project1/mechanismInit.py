@@ -1,10 +1,14 @@
 from mechanism import Mechanism
 import numpy as np
 
-force_mag = 1000
+# Magnitude of the external force from the statement
+force_mag = 100
 
 
 def g(q, param):
+    """
+    g(q) = 0 is the vector of constraints, as computed in the report
+    """
     xA, yA, xC, yC, xE, yE, xG, yG, xH, yH, phiH, phiJ, xL, yL, phiL, phiN, phiO = q
     L1, L2, L3, D = param["L1"], param["L2"], param["L3"], param["D"]
     x_r, y_r, d = param["x_r"], param["y_r"], param["d"]
@@ -30,6 +34,9 @@ def g(q, param):
 
 
 def G(q, param):
+    """
+    G(q) is the constraint gradient matrix, as defined in the report
+    """
     xA, yA, xC, yC, xE, yE, xG, yG, xH, yH, phiH, phiJ, xL, yL, phiL, phiN, phiO = q
     L1, L2, L3, D, n_const, n_dof = param["L1"], param["L2"], param[
         "L3"], param["D"], param["n_const"], param["n_dof"]
@@ -81,11 +88,16 @@ def G(q, param):
 
 
 def K_t(q, lambdas, param):
+    """
+    K_t(q, lambda) is the tangent stiffness matrix, as defined in the report
+    """
     xA, yA, xC, yC, xE, yE, xG, yG, xH, yH, phiH, phiJ, xL, yL, phiL, phiN, phiO = q
     L1, L2, L3, D, x_r, x_s0, y_s0, phi_0, k, n_dof = param["L1"], param["L2"], param["L3"], param[
         "D"], param["x_r"], param["x_s0"], param["y_s0"], param["phi_0"], param["k"], param["n_dof"]
     x_r, y_r = param["x_r"], param["y_r"]
+
     K_t = np.zeros((n_dof, n_dof))
+
     K_t[10, 10] =\
         lambdas[0] * (L3/3 * np.cos(phiH)) + \
         lambdas[1] * (L3/3 * np.sin(phiH)) + \
@@ -108,6 +120,7 @@ def K_t(q, lambdas, param):
         lambdas[14] * (D/2 * np.cos(phiO)) +\
         lambdas[15] * (D/2 * np.sin(phiO))
 
+    # Spring contribution
     x_s = x_r + (D/2) * np.cos(phiO + phi_0)
     y_s = y_r + (D/2) * np.sin(phiO + phi_0)
 
@@ -118,15 +131,23 @@ def K_t(q, lambdas, param):
 
 
 def C_t(q, dq, lambdas, param):
+    """
+    C_t(q, dq, lambda) is the tangent damping matrix, as defined in the report
+    """
     xA, yA, xC, yC, xE, yE, xG, yG, xH, yH, phiH, phiJ, xL, yL, phiL, phiN, phiO = q
     c, D, n_dof = param["c"], param["D"], param["n_dof"]
     C_t = np.zeros((n_dof, n_dof))
 
+    # Damper contribution
     C_t[16, 16] += c * D**2/4
     return C_t
 
 
 def f_ext(t, q, dq, param):
+    """
+    f_ext(q, dq, t) is the vector of external forces, as defined in the report
+    Sums the contributions of external load, gravity, damper and spring
+    """
     xA, yA, xC, yC, xE, yE, xG, yG, xH, yH, phiH, phiJ, xL, yL, phiL, phiN, phiO = q
     dphiO = dq[16]
 
@@ -150,7 +171,6 @@ def f_ext(t, q, dq, param):
     f[13] -= (mu2/2 * L2) * g
 
     ##### spring force #######
-
     x_sF = x_r + (D/2) * np.cos(phiO + phi_0)
     y_sF = y_r + (D/2) * np.sin(phiO + phi_0)
 
@@ -164,8 +184,7 @@ def f_ext(t, q, dq, param):
 
     f[16] += tau_s
 
-    ####### DAMPER FORCE ######
-
+    ####### Damper force ######
     tau_d = - c * D**2/4 * dphiO
 
     f[16] += tau_d
@@ -174,10 +193,14 @@ def f_ext(t, q, dq, param):
 
 
 def M(param):
+    """
+    M is the mass matrix, a diagonal matrix with M_ii = sum (1/2 mass of elements connecting to the node i)
+    """
     L1, L2, L3, D, mu1, mu2, mu3 = \
         param["L1"], param["L2"], param["L3"], param["D"], \
         param["mu1"], param["mu2"], param["mu3"]
     m1, m2, m3, m4 = param["m1"], param["m2"], param["m3"], param["m4"]
+
     M = np.diag([mu3/2 * L3/3,
                 mu3/2 * L3/3,
                 mu3/2 * (2*L3/3 - 2*L3/5) + mu3/2 * L3/3 + mu2/2 * L2,
@@ -200,13 +223,7 @@ def M(param):
     return M
 
 
-"""
-############# SET OF ACTIVE COORDINATES #############
-q = [x1, y1, theta1, x2, y2, theta2]
-4 constraints => 2 DOF left
-ndof = 6, nconst = 4
-"""
-
+# Parameters of the problem, as given in the statement
 p = {
     "n_dof": 17,
     "n_const": 16,
@@ -221,8 +238,8 @@ p = {
     "x_r": 0.1306,
     "y_r": 0.1934,
     "phi_0_deg": 120,
-    "k": 0e3,
-    "c": 0.00,
+    "k": 5e4,
+    "c": 500.00,
     "d": 0.25,
     "l_0": 0.0
 }
@@ -236,5 +253,6 @@ p["x_s0"] = p["x_r"]
 p["y_s0"] = 0
 
 
+# Initialization of the class to be used later
 Suspension = Mechanism(M, G, g, f_ext=f_ext, C_t=C_t,
                        K_t=K_t, parameters=p)

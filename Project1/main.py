@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from initialConditions import IC
 from mechanismInit import Suspension, force_mag
+from pareto import T_steadyState
 
 
 ##### GEOMETRIC PARAMETERS ###
@@ -20,20 +21,36 @@ d = Suspension.p["d"]
 
 #### INTEGRATION PARAMETERS  #####
 
-dt = 0.01
-T = 10
+dt = 0.001
+T = 5
 tol_res = 1e-6
 tol_g = 1e-6
 gamma = 1/2 + 0.1
 beta = 1/4 * (gamma + 1/2)**2 + 0.1
 
-###### NEWMARK ########
+dt_IC = 0.05
+T_IC = 5
+
+###### Newmark time integration ########
+
+
+# Performs light time integration to find steady state of the given mechanism
+
+q_steady, _, _, _ = Suspension.Newmark(
+    dt_IC, T_IC, IC, tol_res, tol_g, gamma, beta)
+dq_steady = np.zeros(len(IC))
+
+# Steady state is passed as initial condition
+# This avoids unphysical motion at the beginning
+IC_specific = np.vstack([q_steady[:, -1], dq_steady]).T
 
 q, dq, ddq, lambdas = Suspension.Newmark(
-    dt, T, IC, tol_res=tol_res, tol_g=tol_g, gamma=gamma, beta=beta)
+    dt, T, IC_specific, tol_res=tol_res, tol_g=tol_g, gamma=gamma, beta=beta)
 
 
-######## POST PROCESSING #######
+################ POST PROCESSING ####################
+
+######## Line Plots ############
 
 # Constraints time evolution
 time = np.linspace(0, T, int(T/dt))
@@ -58,8 +75,6 @@ plt.title("Rocker Angle vs time")
 plt.xlabel("Time (s)")
 plt.ylabel("Angle (°)")
 plt.show()
-print(f"Steady-State Rocker Angle : {np.rad2deg(q[16, -1])}")
-print(f"Steady-State Spring End Rocker Angle : {np.rad2deg(q[16, -1]) + 120}")
 
 
 plt.plot(time, dq[16, :])
@@ -82,19 +97,36 @@ plt.ylabel("Displacement (m))")
 plt.show()
 
 # Bottom of the wheel vertical displacement (yh) plotting
-plt.plot(time, np.abs(dq[9, :]))
+plt.plot(time, (q[9, :] - np.min(q[9, :])) /
+         (np.max(q[9, :]) - np.min(q[9, :])), label="displ")
+plt.plot(time, np.exp(-(time-0.5)**2), label="force")
+plt.title("Wheel vertical displacement vs time")
+plt.xlabel("Time (s)")
+plt.ylabel("Displacement (m))")
+plt.legend()
+plt.show()
+
+# Bottom of the wheel vertical displacement (yh) plotting
+plt.plot(time, (dq[9, :]))
 plt.title("Wheel vertical velpcity vs time")
 plt.xlabel("Time (s)")
 plt.ylabel("Velocity (m/s)")
 plt.show()
 
-print("max vertical velocity", np.max(np.abs(dq[9, :])))
-# Steady state conditions no spring printed :
-# print(q[:, -1])
+# Bottom of the wheel vertical displacement (yh) plotting
+plt.plot(time, ddq[9, :])
+plt.title("Wheel vertical acc vs time")
+plt.xlabel("Time (s)")
+plt.ylabel("Acceleration (m))")
+plt.show()
 
+#############################################################
+print(f"Min grip: {-np.min(ddq[9, :]):.4e} m/s^2")
+print(
+    f"Resulting Ride Height Var: {np.std(q[9, :] - np.mean(q[9, :])):.7f} m^2")
+print(f"Resulting Settling Time: {T_steadyState(dq[9, :], time):.2f} s")
 
-""""""
-############ ANIMATION ############
+#################### ANIMATION ###########################
 # 1. Setup Figure
 fig, ax = plt.subplots(figsize=(8, 8))
 ax.set_aspect('equal')
@@ -168,5 +200,3 @@ ani = animation.FuncAnimation(
 
 plt.legend(loc='upper right', fontsize='small')
 plt.show()
-
-""""""

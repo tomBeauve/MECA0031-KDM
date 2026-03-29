@@ -3,6 +3,19 @@ import matplotlib.pyplot as plt
 from scipy.spatial.distance import pdist
 import math
 
+"""
+This file was done before the project
+It contains the functions to generate a time-constrained-optimal latin Hypercube Sample 
+The optimality is defined using a criterion defined by Morris & Mitchell
+
+Implementation inspired from 
+Engineering Design via Surrogate Modelling
+A Practical Guide
+
+Alexander I. J. Forrester, András Sóbester and Andy J. Keane
+
+"""
+
 
 def generate_LHS(n_sample, n_dim, bounds):
     permut = np.zeros((n_sample, n_dim))
