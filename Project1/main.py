@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from initialConditions import IC
 from mechanismInit import Suspension, force_mag
 from pareto import T_steadyState
-
+import pandas as pd
 
 ##### GEOMETRIC PARAMETERS ###
 n_const = Suspension.p["n_const"]
@@ -21,15 +21,15 @@ d = Suspension.p["d"]
 
 #### INTEGRATION PARAMETERS  #####
 
-dt = 0.001
-T = 5
+dt = 0.01
+T = 10
 tol_res = 1e-6
 tol_g = 1e-6
 gamma = 1/2 + 0.1
 beta = 1/4 * (gamma + 1/2)**2 + 0.1
 
 dt_IC = 0.05
-T_IC = 5
+T_IC = 0.05
 
 ###### Newmark time integration ########
 
@@ -46,6 +46,30 @@ IC_specific = np.vstack([q_steady[:, -1], dq_steady]).T
 
 q, dq, ddq, lambdas = Suspension.Newmark(
     dt, T, IC_specific, tol_res=tol_res, tol_g=tol_g, gamma=gamma, beta=beta)
+
+# Save in a file to plot in other file
+
+labels = ["xA", "yA", "xC", "yC", "xE", "yE", "xG", "yG", "xH",
+          "yH", "phiH", "phiJ", "xL", "yL", "phiL", "phiN", "phiO"]
+
+time_steps = q.shape[1]
+time_array = np.linspace(0, T, time_steps)
+data = {"time": time_array}
+
+for i, label in enumerate(labels):
+    data[f"q_{label}"] = q[i, :]
+    data[f"dq_{label}"] = dq[i, :]
+    data[f"ddq_{label}"] = ddq[i, :]
+
+# Add Lagrange Multipliers and Constraint Violations
+for i in range(lambdas.shape[0]):
+    data[f"lambda_{i}"] = lambdas[i, :]
+    data[f"g_{i}"] = Suspension.g(q, Suspension.p)[i]
+
+df_sim = pd.DataFrame(data)
+
+filepath = f"main_results/k{Suspension.p["k"]}_c{Suspension.p["c"]}.csv"
+df_sim.to_csv(filepath, index=False)
 
 
 ################ POST PROCESSING ####################
