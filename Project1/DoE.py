@@ -35,10 +35,10 @@ beta_IC = 1/4 * (gamma + 1/2)**2 + 0.1
 
 #### DoE PARAMETERS #####
 bounds_k_log = [3.9, 5.3]
-bounds_c_log = [4.00, 4.28]
-n_samples = 20
+bounds_c_log = [2.4, 4.28]
+n_samples = 400
 n_iter_LHS = 100000
-output_dir = "doe_resultsZoom"
+output_dir = "doe_resultsStrict"
 
 
 def run_and_save_doe(k_val, c_val):
@@ -119,6 +119,8 @@ print(f"Optimal LHS generated in {time.time() - startLHS:.2f} seconds.")
 startpar = time.time()
 # Performs DoE using the samples
 for _, (k, c) in enumerate(lhs_samples):
+    if 10**c/(2 * np.sqrt(10**k * 200)) < 0.1 or 10**c/(2 * np.sqrt(10**k * 200)) > 1.5:
+        continue
     run_and_save_doe(10**k, 10**c)
 print(
     f"DoE finished in {time.time() - startpar:.2f} seconds for {n_samples} samples.")

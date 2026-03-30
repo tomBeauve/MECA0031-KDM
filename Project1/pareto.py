@@ -39,17 +39,17 @@ def T_steadyState(dq, timeArray, threshold=0.02, skip_steps=0):
 
 #################################################
 #                                               #
-#       POST PROCESSING FROM DATA FROM DoE      #
+#           DoE results unpacking               #
 #                                               #
 #################################################
 
-# Path to your folder
+# Path to folders results
 folder_path = "doe_results"
-T_sslim = 10
+T_sslim = 2.5
 
 file_paths = glob.glob(os.path.join(folder_path, "sim_k*_c*.csv"))
 
-folder_path2 = "doe_resultsZoom"
+folder_path2 = "doe_resultsStrict"
 file_paths2 = glob.glob(os.path.join(folder_path2, "sim_k*_c*.csv"))
 file_paths.extend(file_paths2)
 summary_list = []
@@ -99,8 +99,20 @@ if __name__ == "__main__":
         })
 
     df_master = pd.DataFrame(summary_list)
+    # Filtering of DoE to remove results out of design space
+    m_sprung = 200
+    damping_ratio = df_master["c"] / (2 * np.sqrt(df_master["k"] * m_sprung))
+    df_master = df_master[damping_ratio.between(0.1, 1.5)].copy()
+
     df_master.to_csv(os.path.join(
         folder_path, "doe_summary_results.csv"), index=False)
+
+
+#################################################
+#                                               #
+#       Print the DoE within design space       #
+#                                               #
+#################################################
 
     # Plots the DoE samples in the design space
     plt.scatter(df_master["k"], df_master["c"])
@@ -109,6 +121,99 @@ if __name__ == "__main__":
     plt.xscale("log")
     plt.yscale("log")
     plt.show()
+
+#################################################
+#                                               #
+#    Identification of best design and print    #
+#                                               #
+#################################################
+
+###########################
+# Best min grip, filtered by settling time required <= T_ssLim
+###########################
+
+    df_summ = pd.read_csv(os.path.join(
+        folder_path, "doe_summary_results.csv"))
+    df_summ = df_summ[df_summ["settling_time"] < T_sslim].copy()
+
+    idx_best_min_grip = df_summ["min_grip"].idxmin()
+
+    best_min_grip = df_summ.loc[idx_best_min_grip]
+
+    min_grip_val = best_min_grip["min_grip"]
+    k_val = best_min_grip["k"]
+    c_val = best_min_grip["c"]
+    RHVar_val = best_min_grip["rideHeightVar"]
+    settling_val = best_min_grip["settling_time"]
+
+    print("#########################################################################")
+    print(f"--- Best (max) Min grip ---")
+    print(f"Min grip: {min_grip_val:.4e} m/s^2")
+    print(f"Optimal Stiffness (k): {k_val:.2f} N/m")
+    print(f"Optimal Damping (c): {c_val:.2f} Ns/m")
+    print(f"Resulting Ride Height Var: {RHVar_val:.7f} m^2")
+    print(f"Resulting Settling Time: {settling_val:.2f} s")
+
+###########################
+# Best ride height var, filtered by settling time required <= T_ssLim
+###########################
+    idx_best_RHVar = df_summ["rideHeightVar"].idxmin()
+
+    best_RHVar = df_summ.loc[idx_best_RHVar]
+
+    min_grip_val = best_RHVar["min_grip"]
+    k_val = best_RHVar["k"]
+    c_val = best_RHVar["c"]
+    RHVar_val = best_RHVar["rideHeightVar"]
+    settling_val = best_RHVar["settling_time"]
+
+    print("#########################################################################")
+    print(f"--- Best (min) Ride Height Variance ---")
+    print(f"Ride Height Var: {RHVar_val:.7f} m^2")
+    print(f"Optimal Stiffness (k): {k_val:.2f} N/m")
+    print(f"Optimal Damping (c): {c_val:.2f} Ns/m")
+    print(f"Resulting Min grip: {min_grip_val:.4e} m/s^2")
+    print(f"Resulting Settling Time: {settling_val:.2f} s")
+
+###########################
+# Normalizes the KPIs between 0 and 1, 0 is best, 1 is worst
+# Then computes performance score as weighed sum of the normalized KPI
+# Best overall score still filtered by settling time  required <= T_ssLim
+############################
+    df_summ = pd.read_csv(os.path.join(
+        folder_path, "doe_summary_results.csv"))
+    df_summ = df_summ[df_summ["settling_time"] < T_sslim].copy()
+
+    best_RHVar = df_summ.loc[idx_best_RHVar]
+    worst_RHVar = df_summ.loc[df_summ["rideHeightVar"].idxmax()]
+    best_min_grip = df_summ.loc[idx_best_min_grip]
+    worst_min_grip = df_summ.loc[df_summ["min_grip"].idxmax()]
+
+    rhVarNormalized = (np.log10(df_summ["rideHeightVar"]) - np.log10(best_RHVar["rideHeightVar"])) / \
+        (np.log10(worst_RHVar["rideHeightVar"]) -
+         np.log10(best_RHVar["rideHeightVar"]))
+
+    minGripNormalized = (df_summ["min_grip"] - best_min_grip["min_grip"]) / \
+        (worst_min_grip["min_grip"] - best_min_grip["min_grip"])
+
+    df_summ["performance_score"] = 0.5 * \
+        rhVarNormalized + 50 * minGripNormalized
+    idx_best_score = df_summ["performance_score"].idxmin()
+    best_score = df_summ.loc[idx_best_score]
+    print("#########################################################################")
+    print(f"--- Best overall score ---")
+    print(f"Performance score: {best_score['performance_score']:.4f}")
+    print(f"Optimal Stiffness (k): {best_score['k']:.2f} N/m")
+    print(f"Optimal Damping (c): {best_score['c']:.2f} Ns/m")
+    print(f"Resulting Min grip: {best_score['min_grip']:.4e} m/s^2")
+    print(f"Resulting Ride Height Var: {best_score['rideHeightVar']:.7f} m^2")
+    print(f"Resulting Settling Time: {best_score['settling_time']:.2f} s")
+
+#################################################
+#                                               #
+#           Pareto Plot of the 2 KPIs           #
+#                                               #
+#################################################
 
     df_master = df_master[df_master["settling_time"] < T_sslim].copy()
 
@@ -130,6 +235,8 @@ if __name__ == "__main__":
     ax3.set_title("Impact of Settling Time")
 
     for ax in [ax1, ax2, ax3]:
+        ax.scatter(best_score["min_grip"], best_score["rideHeightVar"],
+                   color='red', marker='*', s=200, label='Best Overall')
         ax.set_xscale("log")
         ax.set_yscale("log")
         ax.set_xlabel("Min Grip (Tire Contact)")
@@ -143,67 +250,25 @@ if __name__ == "__main__":
     plt.savefig(os.path.join(
         folder_path, "pareto_comparison_3way.png"), dpi=300)
     plt.show()
-    ##################################################################
-    # Prints the best in each KPI, and the corresponding parameters + other KPI
-    df_summ = pd.read_csv(os.path.join(
-        folder_path, "doe_summary_results.csv"))
 
-    idx_best_min_grip = df_summ["min_grip"].idxmin()
 
-    best_min_grip = df_summ.loc[idx_best_min_grip]
+#################################################
+#                                               #
+#        DoE plot colored by min grip           #
+#                                               #
+#################################################
 
-    min_grip_val = best_min_grip["min_grip"]
-    k_val = best_min_grip["k"]
-    c_val = best_min_grip["c"]
-    RHVar_val = best_min_grip["rideHeightVar"]
-    settling_val = best_min_grip["settling_time"]
+    fig, ax = plt.subplots(figsize=(8, 6))
+    # Plots the DoE samples in the design space
+    sc = ax.scatter(df_master["k"], df_master["c"],
+                    c=np.log10(df_master["min_grip"]), cmap='plasma', alpha=0.7)
+    fig.colorbar(sc, ax=ax, label="Min grip log10()")
 
-    print(f"--- Best (max) Min grip ---")
-    print(f"Min grip: {min_grip_val:.4e} m/s^2")
-    print(f"Optimal Stiffness (k): {k_val:.2f} N/m")
-    print(f"Optimal Damping (c): {c_val:.2f} Ns/m")
-    print(f"Resulting Ride Height Var: {RHVar_val:.7f} m^2")
-    print(f"Resulting Settling Time: {settling_val:.2f} s")
+    ax.scatter(best_score["k"], best_score["c"],
+               color='red', marker='*', s=100, label='Best Overall')
 
-    ##################################################################
-    idx_best_RHVar = df_summ["rideHeightVar"].idxmin()
-
-    best_RHVar = df_summ.loc[idx_best_RHVar]
-
-    min_grip_val = best_RHVar["min_grip"]
-    k_val = best_RHVar["k"]
-    c_val = best_RHVar["c"]
-    RHVar_val = best_RHVar["rideHeightVar"]
-    settling_val = best_RHVar["settling_time"]
-
-    print(f"--- Best (min) Ride Height Variance ---")
-    print(f"Ride Height Var: {RHVar_val:.7f} m^2")
-    print(f"Optimal Stiffness (k): {k_val:.2f} N/m")
-    print(f"Optimal Damping (c): {c_val:.2f} Ns/m")
-    print(f"Resulting Min grip: {min_grip_val:.4e} m/s^2")
-    print(f"Resulting Settling Time: {settling_val:.2f} s")
-
-    ##################################################################
-    # Prints the best in each KPI, and the corresponding parameters + other KPI
-    df_summ = pd.read_csv(os.path.join(
-        folder_path, "doe_summary_results.csv"))
-
-    df_summ = df_summ[df_summ["settling_time"] < T_sslim].copy()
-
-    idx_best_min_grip = df_summ["min_grip"].idxmin()
-
-    best_min_grip = df_summ.loc[idx_best_min_grip]
-
-    min_grip_val = best_min_grip["min_grip"]
-    k_val = best_min_grip["k"]
-    c_val = best_min_grip["c"]
-    RHVar_val = best_min_grip["rideHeightVar"]
-    settling_val = best_min_grip["settling_time"]
-
-    print(f"--- Filetered ---")
-    print(f"--- Best (max) Min grip ---")
-    print(f"Min grip: {min_grip_val:.4e} m/s^2")
-    print(f"Optimal Stiffness (k): {k_val:.2f} N/m")
-    print(f"Optimal Damping (c): {c_val:.2f} Ns/m")
-    print(f"Resulting Ride Height Var: {RHVar_val:.7f} m^2")
-    print(f"Resulting Settling Time: {settling_val:.2f} s")
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.set_xlabel("k")
+    ax.set_ylabel("c")
+    plt.show()
