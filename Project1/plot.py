@@ -78,7 +78,7 @@ if SINGLE_PLOT:
     plt.xlabel("Time (s)")
     plt.ylabel("Vertical Position (m)")
     plt.tight_layout()
-    plt.savefig(f"main_plots/wheelDispl_k{k}_c{c}_force.png", dpi=300)
+    plt.savefig(f"main_plots/wheelDispl_k{k}_c{c}_force.pdf", dpi=300)
     plt.show()
     print(f"k = {k}, c = {c}")
 
@@ -88,7 +88,7 @@ if SINGLE_PLOT:
     plt.xlabel("Time (s)")
     plt.ylabel("Rocker Angle (°)")
     plt.tight_layout()
-    plt.savefig(f"main_plots/AngleDispl_k{k}_c{c}_force.png", dpi=300)
+    plt.savefig(f"main_plots/AngleDispl_k{k}_c{c}_force.pdf", dpi=300)
     plt.show()
 
     # Rocker angle angular velocity
@@ -96,7 +96,7 @@ if SINGLE_PLOT:
     plt.xlabel("Time (s)")
     plt.ylabel("Angular velocity (°/s)")
     plt.tight_layout()
-    plt.savefig(f"main_plots/AngleVel_k{k}_c{c}_force.png", dpi=300)
+    plt.savefig(f"main_plots/AngleVel_k{k}_c{c}_force.pdf", dpi=300)
     plt.show()
 
     # Rocker angle angular acceleration
@@ -104,7 +104,7 @@ if SINGLE_PLOT:
     plt.xlabel("Time (s)")
     plt.ylabel(r"Angular Acceleration (°/$s^2$)")
     plt.tight_layout()
-    plt.savefig(f"main_plots/AngleAccel_k{k}_c{c}_force.png", dpi=300)
+    plt.savefig(f"main_plots/AngleAccel_k{k}_c{c}_force.pdf", dpi=300)
     plt.show()
 
 
@@ -134,7 +134,7 @@ if COMPARATIVE_PLOT:
 
     plt.legend(frameon=True)
     plt.tight_layout()
-    plt.savefig(f"main_plots/comp_WheelDispl.png", dpi=300)
+    plt.savefig(f"main_plots/comp_WheelDispl.pdf", dpi=300)
     plt.show()
 
     for k, c in CONFIG:
@@ -160,5 +160,5 @@ if COMPARATIVE_PLOT:
 
     plt.legend(frameon=True)
     plt.tight_layout()
-    plt.savefig(f"main_plots/comp_RockerAngle.png", dpi=300)
+    plt.savefig(f"main_plots/comp_RockerAngle.pdf", dpi=300)
     plt.show()

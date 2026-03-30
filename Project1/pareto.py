@@ -252,7 +252,7 @@ if __name__ == "__main__":
 
     # Save the unified Pareto figure
     plt.savefig(os.path.join(
-        folder_path, "pareto_comparison_3way.png"), dpi=300)
+        folder_path, "pareto_comparison_3way.pdf"), dpi=300)
     plt.show()
 
 
