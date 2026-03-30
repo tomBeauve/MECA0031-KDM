@@ -2,7 +2,7 @@ from mechanism import Mechanism
 import numpy as np
 
 # Magnitude of the external force from the statement
-force_mag = 00
+force_mag = 100
 
 
 def g(q, param):
@@ -239,7 +239,7 @@ p = {
     "y_r": 0.1934,
     "phi_0_deg": 120,
     "k": 5e4,
-    "c": 1000,
+    "c": 6300,
     "d": 0.25,
     "l_0": 0.0
 }

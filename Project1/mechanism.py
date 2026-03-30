@@ -142,6 +142,7 @@ class Mechanism:
         """
         Solves the linearized system using a scaling logic for better condition number of the matrix
         Scales off-diagonal blocks by a heuristic scaling factor for the smallest values of the matrix 1/dt**2 
+        Approx 2 times faster than precondtitioning, use unless condition number is really bad
         """
 
         k = 1/(dt**2)

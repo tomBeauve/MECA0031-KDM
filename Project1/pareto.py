@@ -43,9 +43,9 @@ def T_steadyState(dq, timeArray, threshold=0.02, skip_steps=0):
 #                                               #
 #################################################
 
-# Path to folders results
+# Path to results folders
 folder_path = "doe_results"
-T_sslim = 2.5
+
 
 file_paths = glob.glob(os.path.join(folder_path, "sim_k*_c*.csv"))
 
@@ -53,6 +53,10 @@ folder_path2 = "doe_resultsStrict"
 file_paths2 = glob.glob(os.path.join(folder_path2, "sim_k*_c*.csv"))
 file_paths.extend(file_paths2)
 summary_list = []
+
+# Filter on max settling time : designs with settling time > T_sslim are not considered
+# They are considered not responsive enough
+T_sslim = 2.5
 
 if __name__ == "__main__":
 

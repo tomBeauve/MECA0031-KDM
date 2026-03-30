@@ -21,15 +21,15 @@ d = Suspension.p["d"]
 
 #### INTEGRATION PARAMETERS  #####
 
-dt = 0.01
-T = 10
+dt = 0.001
+T = 2
 tol_res = 1e-6
 tol_g = 1e-6
 gamma = 1/2 + 0.1
 beta = 1/4 * (gamma + 1/2)**2 + 0.1
 
 dt_IC = 0.05
-T_IC = 0.05
+T_IC = 10
 
 ###### Newmark time integration ########
 
@@ -68,8 +68,8 @@ for i in range(lambdas.shape[0]):
 
 df_sim = pd.DataFrame(data)
 
-filepath = f"main_results/k{Suspension.p["k"]}_c{Suspension.p["c"]}.csv"
-df_sim.to_csv(filepath, index=False)
+filepath = f"main_results/k{Suspension.p["k"]}_c{Suspension.p["c"]}_force.csv"
+# df_sim.to_csv(filepath, index=False)
 
 
 ################ POST PROCESSING ####################
